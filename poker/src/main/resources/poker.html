@@ -1,0 +1,492 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+    <title>Online 7 Stud</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style type="text/css">
+        /* modal background */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height:100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4);  /* Black w/ opacity */
+        }
+
+        /* Modal Content/Box */
+        .modal-content {
+            background-color: #fefefe;
+            left: 20%;
+            top: 20%;
+            margin: auto;
+            margin-top: 30%; /* 15% from the top and centered */
+            padding: 20px;
+            border: 5px solid #888;
+            width: 50%; /* Could be more or less, depending on screen size */
+        }
+        td { align-content: center; }
+        img { display:block; margin-left: auto; margin-right: auto }
+
+    </style>
+    <!-- script type="text/javascript" src="mbPlay.js"></script --> <!-- methods for actual game play -->
+    <!-- methods to draw the screen and send messages to the server -->
+    <script type="text/javascript">
+        var me = 0;
+
+        function startitup()
+        {
+            var btn = document.getElementById("start");
+            if (btn)
+                btn.hidden = true;
+            var http = new XMLHttpRequest();
+            http.open("GET", "poker", true);
+            http.send();
+            return false;
+        }
+
+        function setImageData( td, cardDataStr )
+        {
+            if (null !== td)
+            {
+                var image = JSON.parse(cardDataStr);
+                if (undefined !== image.img) {
+                    var img;
+                    while (last = td.lastChild) td.removeChild(last);
+                    img = document.createElement("img");
+                    img.src = image.img;
+                    img.setAttribute("width", "95%");
+                    td.appendChild(img);
+                    td.setAttribute("value", cardDataStr);
+                    return img;
+                }
+            }
+        }
+
+        function funcShowAllHands( hands )
+        {
+            hands.forEach( function( item  )
+            {
+                var cell;
+
+                // 1. get the hand for the id.
+                var playerNum = item.id;
+                var numPlayerAdjusted = 0;
+                if (me === playerNum)
+                {
+                    var nameCell = document.getElementById("player0");
+                    nameCell.innerText = item.stake;
+                    return;
+                }
+                else if (playerNum < me)
+                    numPlayerAdjusted = playerNum;
+                else
+                    numPlayerAdjusted = (playerNum - 1);
+                var cardData = item.hand.cards;
+
+                // 2. Get the data for the player's row
+                nameCell = document.getElementById("player" + numPlayerAdjusted );
+                nameCell.innerHTML = item.name + "<br /><br />" + item.stake;
+                var strRowId = "card" + numPlayerAdjusted;
+                var i = 0;
+                cardData.forEach( function( card )
+                {
+                    if (card.img)
+                    {
+                        setImageData(document.getElementById(strRowId + i), JSON.stringify( card ));
+                        i++;
+                    }
+                });
+                while (i < 7)
+                {
+                    cell = document.getElementById( strRowId + i );
+                    cell.innerHTML = "";
+                    i++;
+                }
+
+            });
+        }
+
+        function highlightDiscarded(hands)
+        {
+            hands.forEach( function ( hand )
+            {
+                var i = hand.id;
+                var numPlayerAdjusted = 0;
+                if (i < me)
+                    numPlayerAdjusted = i;
+                else if (i > me)
+                    numPlayerAdjusted = (i - 1);
+
+                // get the player name cell
+                var cell;
+                cell = document.getElementById("player" + numPlayerAdjusted);
+                if (cell)
+                {
+                    cell.innerHTML = hand.name + "'s hand<br /><br />" + hand.type;
+                }
+                hand.cards.forEach(function (card)
+                {
+                    var id = "card" + (numPlayerAdjusted === 0 ? "" : "" + numPlayerAdjusted) + card;
+                    cell = document.getElementById(id);
+                    // get the image target and indicate that it is discarded
+                    var img = cell.getElementsByTagName("img")[0];
+                    img.setAttribute("width", "60%");
+                });
+            });
+        }
+
+        function showParticipants( players )
+        {
+            players.forEach(function (player)
+            {
+                var numPlayerAdjusted = 0;
+                if (player.id < me)
+                    numPlayerAdjusted = player.id;
+                else if (player.id > me)
+                    numPlayerAdjusted = (player.id - 1);
+                var cell = document.getElementById("player" + numPlayerAdjusted);
+                if (cell)
+                {
+                    // if cell doesn't exist, that means it's just me.
+                    if (player.id !== me)
+                    {
+                        var inner = cell.innerHTML;
+                        cell.innerHTML = player.name + "'s hand:";
+                    }
+                }
+            });
+        }
+
+        function closeModal()
+        {
+            var d = document.getElementById( "myModal" );
+            d.style.display="none";
+        }
+
+        function play( )
+        {
+            // Collect the amount of the bet
+            var rbs = document.querySelectorAll('input[name="target"]');
+            var rbNum = 0;
+            for ( var i = 0; i < rbs.length; i++ )
+            {
+                if (rbs[i].checked) {
+                    rbNum = Number( rbs[i].value );
+                    break;
+                }
+            }
+            // rbNum is now the value of the checked radio button in the group. 0 == fold,
+            // 1 = check/call, 2 == raise
+            var bet = 0;
+            rbs = document.getElementById("quantity");
+            switch( rbNum )
+            {
+            case 0: bet = -1; break;
+            case 1: bet = rbs.min - 2; break;
+            case 2: bet = rbs.value;
+            }
+            // post a message to the server saying to make this bet
+            var http = new XMLHttpRequest();
+            http.open("POST", "poker/play", true);
+            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            var queryString = "bet=" + bet; //  + "&suit=" + suit + "&value=" + value;
+            http.send( queryString );
+            closeModal();
+        }
+
+        function openModal( betData )
+        {
+            var d = document.getElementById( "myModal" );
+            var modal = document.getElementById("betting-form");
+            var choices = modal.getElementsByClassName("rb");
+            var myChoice = choices[1].getElementsByTagName("label")[0];
+            // Set max and min on raise input. Min must be highBet + 1, and max is pot minus max bet
+            var numberInput = document.getElementById( "quantity" );
+            numberInput.value = betData.highBet + 2;
+            numberInput.min = betData.highBet + 2;
+            numberInput.step = 2;
+            var foldDiv = document.getElementById("fold");
+            if (betData.highBet === 0)
+            {
+                myChoice.innerText = "Check";
+                foldDiv.hidden = true;
+            }
+            else
+            {
+                myChoice.innerText = "Call";
+                foldDiv.hidden = false;
+            }
+            myChoice = document.getElementById("checkcall");
+            myChoice.checked = true;
+//            numberInput.min = betData.highBet + 2;
+
+            // TODO: max is pot, so we need to set that here.
+
+            enableRaiseAndSetLimits();
+            d.style.display = "block";
+        }
+
+        function enableRaiseAndSetLimits ()
+        {
+            var raiseButton = document.getElementById("raise");
+            if (raiseButton && raiseButton.checked)
+            {
+                var raiseInput = document.getElementById("quantity");
+                raiseInput.disabled = false;
+            }
+            else if (raiseButton)
+                document.getElementById("quantity").disabled=true;
+            raiseButton = document.getElementById("bet");
+            if (raiseButton)
+                raiseButton.disabled = false;
+        }
+    </script>
+
+</head>
+<body>
+    <!-- The color chooser Modal dialog -->
+    <div id="myModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <form id="betting-form" action="" onsubmit="play();return false;">
+                <h3>Place your bet</h3><br />
+                <div class="rb" id="fold" hidden>
+                    <input id="frb" type="radio" name="target" value="0" onchange="enableRaiseAndSetLimits(); return false;">
+                    <label for="frb">Fold</label>
+                </div><br />
+
+                <div class="rb">
+                    <input type="radio" id="checkcall" name="target" value="1" onchange="enableRaiseAndSetLimits(); return false;">
+                    <label for="checkcall">Check</label>
+                </div><br />
+
+                <div class="rb">
+                    <input type="radio" id="raise" name="target" value="2" onchange="enableRaiseAndSetLimits(); return false;">
+                    <label for="raise">Raise To:</label>
+                </div><br />
+                <div>
+                    <input type="number" id="quantity" name="quantity" min="1" max="5" step="1" disabled>
+                </div><br />
+                <center><input id = "bet" type="submit" value="Bet" disabled></center>
+            </form>
+        </div>
+    </div>
+
+    <!-- audio id="your-turn" src="faces/Itsyourturn.mp3" hidden controls="controls"></audio -->
+    <div style="align-content: space-between; align-items:center; display:flex; width: 100%">
+        <div id="lastAction" style="width: 40%; height:5em; line-height:1.1em; overflow:auto; padding:5px;">&nbsp;</div>
+        <div style="flex-grow: 1">
+            <h1 id="currentPlayer" style="margin-left: 5%">Welcome <span id="playerName">Player</span></h1>
+        </div>
+        <div style="flex-grow: .5">The pot is <span id="pot">0</span> chips</div>
+    </div>
+    <!-- div>
+        <h2>Players: </h2>
+        <ul id="participants"></ul>
+    </div>
+    <hr / -->
+    <br style="clear:both" />
+    <div id="tableau">
+    <table id="cards" style="width: 100%">
+        <tr><th id="decklabel" style="text-align: center"></th>
+            <th id="line" colspan="3"><hr/></th>
+            <th style="text-align: center">Your hand</th>
+            <th colspan="3"><hr/></th></tr>
+        <tr id="myHand">
+            <td id="player0" width="12%"></td>
+            <td id="card0" width="12%"></td>
+            <td id="card1" width="12%"></td>
+            <td id="card2" width="12%"></td>
+            <td id="card3" width="12%"></td>
+            <td id="card4" width="12%"></td>
+            <td id="card5" width="12%"></td>
+            <td id="card6" width="12%"></td>
+        </tr>
+        <tr><td colspan="8"><hr/></td></tr>
+
+        <tr id="tableau1">
+            <td id="player1"></td>
+            <td id="card10"></td>
+            <td id="card11"></td>
+            <td id="card12"></td>
+            <td id="card13"></td>
+            <td id="card14"></td>
+            <td id="card15"></td>
+            <td id="card16"></td>
+        </tr>
+        <tr id="tableau2">
+            <td id="player2"></td>
+            <td id="card20"></td>
+            <td id="card21"></td>
+            <td id="card22"></td>
+            <td id="card23"></td>
+            <td id="card24"></td>
+            <td id="card25"></td>
+            <td id="card26"></td>
+        </tr>
+        <tr id="tableau3">
+            <td id="player3"></td>
+            <td id="card30"></td>
+            <td id="card31"></td>
+            <td id="card32"></td>
+            <td id="card33"></td>
+            <td id="card34"></td>
+            <td id="card35"></td>
+            <td id="card36"></td>
+        </tr>
+        <tr id="tableau4">
+            <td id="player4"></td>
+            <td id="card40"></td>
+            <td id="card41"></td>
+            <td id="card42"></td>
+            <td id="card43"></td>
+            <td id="card44"></td>
+            <td id="card45"></td>
+            <td id="card46"></td>
+        </tr>
+        <tr id="tableau5">
+            <td id="player5"></td>
+            <td id="card50"></td>
+            <td id="card51"></td>
+            <td id="card52"></td>
+            <td id="card53"></td>
+            <td id="card54"></td>
+            <td id="card55"></td>
+            <td id="card56"></td>
+        </tr>
+    </table>
+    </div><br />
+    <audio id="your-turn" src="faces/silence.mp3" hidden controls="controls"></audio>
+    <form action="" onsubmit="startitup();return false;">
+        <CENTER><button id="start" style="vertical-align: center">DEAL</button></CENTER>
+    </form>
+
+<script type="text/javascript">
+    eventSource = new EventSource("poker/events");
+
+    // --------- "broadcast" events
+    // eventSource.addEventListener("reset", function (evt)
+    // {
+    //     var btn = document.getElementById("start");
+    //     btn.disabled = true;
+    //     btn.innerText = "End Game";
+    // });
+
+    // Announce the identity of the current player.
+    eventSource.addEventListener("player", function (evt)
+    {
+        /*
+        current player's name
+        last player's action
+        current pot
+         */
+        var jsonData = JSON.parse( evt.data );
+        var currentPlayer = document.getElementById( "currentPlayer" );
+        currentPlayer.innerText = jsonData.action.name + "'s Bet!";
+        currentPlayer = document.getElementById("pot");
+        currentPlayer.innerText = jsonData.action.pot;
+        currentPlayer = document.getElementById("lastAction");
+        currentPlayer.innerHTML += ("<br />" + jsonData.action.last);
+        currentPlayer.scrollTop = currentPlayer.scrollHeight;
+
+    });
+
+    // broadcast event saying someone has just joined.
+    eventSource.addEventListener( "participants", function (evt)
+    {
+        var arrPlayers = JSON.parse( evt.data );
+        showParticipants( arrPlayers.players );
+    });
+
+    eventSource.addEventListener( "best",  function (evt)
+    {
+        // This method should read the list of discarded cards for each player, and highlight them
+        var hand = JSON.parse( evt.data );
+        highlightDiscarded( hand.hands );
+    });
+
+    eventSource.addEventListener( "show-all", function (evt) {
+        var json = JSON.parse( evt.data );
+        funcShowAllHands( json.hands );
+    } );
+
+    // --------- per browser events
+    eventSource.addEventListener( "whoami", function (evt)
+    {
+        init = JSON.parse( evt.data );
+        me = Number( init.playerId );
+        var audioObj = document.getElementById( "your-turn" );
+        if (audioObj)
+            audioObj.src=init.noise;
+        audioObj = document.getElementById("playerName");
+        audioObj.innerText = init.name;
+    });
+
+    eventSource.addEventListener( "show-hand", function (evt)
+    {
+        // This should be an event unique to this player. It should show his hand.
+        // var buttons = document.getElementById("draw");
+        // buttons.hidden=true;
+        var i = 0;
+        var hand = JSON.parse( evt.data );
+        hand.cards.forEach( function ( image )
+        {
+            if (image.img)
+            {
+                setImageData( document.getElementById("card" + i), JSON.stringify( image ));
+                i++;
+            }
+        });
+        while (i < 7)
+        {
+            cell = document.getElementById("card" + i);
+            cell.innerHTML = "";
+            i++;
+        }
+    });
+
+    //  When a player is activated a modal should open to collect his bet
+    eventSource.addEventListener( "activate", function(evt)
+    {
+        openModal( JSON.parse( evt.data ).betData);
+    });
+
+    eventSource.addEventListener( "game-over", function (evt)
+    {
+        alert( evt.data );
+        window.location.href = "/index.html";
+    });
+
+    eventSource.addEventListener("round-over", function (evt)
+    {
+        var numPlayer = Number(evt.data);
+        // Announce the winner
+        var headline = document.getElementById("currentPlayer");
+        headline.innerText = evt.data + " Wins!";
+        // headline = document.getElementById("pot");
+        // if (headline)
+        //     headline.innerText = "0";
+        headline = document.getElementById("lastAction");
+        if (headline)
+            headline.innerHTML = "";
+        // find the start button and enable it.
+        var btn = document.getElementById("start");
+        btn.hidden = false;
+    });
+
+    eventSource.addEventListener("alert", function (evt)
+    {
+        alert( evt.data );
+    });
+
+</script>
+
+</body>
+</html>

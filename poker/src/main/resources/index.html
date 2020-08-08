@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>7 Card Stud</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>    </style>
+ </head>
+<body style="font-size: large">
+<h1 style="text-align: center">Welcome to online 7 Card Stud Poker!</h1>
+<br/>
+
+<h2>House rules:</h2>
+<ol>
+    <li>A round ends when any player reaches 700 kilometers. The extension option has not yet been implemented.</li>
+</ol>
+<!-- h2>Scoring:</h2>
+<div style="font-size: larger">At the end of each round all players will be assigned a score representing the number of points calculated from the cards remaining in his or her hand. At the end of the game, the winner is the player with the fewest number of points, followed in second place by the player with the next fewest and so on.</div><br / -->
+<h3>Please enter a unique user name to participate in the game.</h3>
+<form action="poker" method="post">
+    <table>
+        <tr>
+            <td>
+                <label for="name">Player nickname:&nbsp;</label>
+                <input type="text" id="name" name="name" style="width: 10em">&nbsp;&nbsp;&nbsp;&nbsp;
+            </td>
+            <td>
+                <label for="gameId">Game ID:&nbsp;</label>
+                <select id="gameId" name="gameId">
+                    <option value="-1">[NEW GAME]</option>
+                </select>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </td>
+            <td>
+                <label for="submitNoise">Alert Sound (optional): </label>
+                <select id="submitNoise" name="noise">
+                    <option value="0">[NONE]</option>
+                    <option value="11">Gong</option>
+                    <option value="10">Hawk</option>
+                    <option value="1">iMac</option>
+                    <option value="2">It's Your Turn</option>
+                    <option value="3">Light Saber</option>
+                    <option value="4">Magic Wand</option>
+                    <option value="5">Metronome</option>
+                    <option value="9">Owl</option>
+                    <option value="8">Rooster</option>
+                    <option value="6">Tardis</option>
+                    <option value="7">Wheel</option>
+                </select>
+            </td>
+        </tr>
+    </table><br />
+    <center><input id="send" type="submit" value="Start game"><br /></center>
+</form>
+</body>
+
+<script type="text/javascript">
+    // enable the "join game" button if and only if the player's nickname is more than 3 characters long
+    function enableSend()
+    {
+        var nameInput = document.getElementById('name').value;
+        if (nameInput && 2 < nameInput.trim().length)
+        {
+            document.getElementById('send').removeAttribute("disabled");
+        }
+        else
+        {
+            document.getElementById('send').setAttribute("disabled", null);
+        }
+    }
+
+    enableSend();
+
+    document.getElementById("name").addEventListener("input", enableSend );
+
+    gameEventSource = new EventSource("poker/games");
+
+    gameEventSource.addEventListener("games", function (evt)
+    {
+        // data will be a list of game names and values.
+        var gameArray = JSON.parse( evt.data ).games;
+        var gameSelect = document.getElementById("gameId");
+        var selected = gameSelect.selectedIndex;
+        if (-1 === selected)
+            selected = 0;
+        gameSelect.length = 0;
+        gameSelect.options[0] = new Option( "[NEW GAME]", "-1" );
+        for (var i = 0; i < gameArray.length; i++ )
+        {
+            gameSelect.options[i + 1] = new Option( gameArray[i].name + "'s Game",
+                gameArray[i].number );
+        }
+        if (gameSelect.length >= selected)
+            gameSelect.selectedIndex = selected;
+        else
+            gameSelect.selectedIndex = 0;
+    });
+
+    document.getElementById("gameId").addEventListener("change", function (ev) {
+        var gameSelect = document.getElementById("gameId");
+        var selected = gameSelect.selectedIndex;
+        var sendBtn = document.getElementById("send");
+        if (selected < 1)
+            sendBtn.value = "Start game";
+        else
+            sendBtn.value = "Join game";
+    });
+
+</script>
+</html>
