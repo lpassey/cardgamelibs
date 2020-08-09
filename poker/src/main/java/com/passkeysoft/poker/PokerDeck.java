@@ -15,6 +15,7 @@ public class PokerDeck extends Deck
     static final int SPADES = 0x1;
 
     // Ranks
+    @SuppressWarnings("WeakerAccess")
     public static final int DEUCE = 0;
     public static final int TREY = 1;
     public static final int FOUR = 2;
@@ -53,7 +54,7 @@ public class PokerDeck extends Deck
 
                 // Face( image, description );
                 addFace( newCard, new Face( sb.toString(), sb.toString() ));
-                addCard( newCard );
+                cardList.add( newCard );
             }
         }
         addFace( back, new Face( "gray_back.png", "Back of a card" ));

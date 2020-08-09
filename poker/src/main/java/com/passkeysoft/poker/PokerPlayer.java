@@ -1,17 +1,17 @@
 package com.passkeysoft.poker;
 
 import com.passkeysoft.Card;
-import com.passkeysoft.cardgameserver.CardPlayerData;
+import com.passkeysoft.cardgameserver.CardPlayer;
 import org.glassfish.jersey.media.sse.OutboundEvent;
 
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-class PokerPlayer extends CardPlayerData
+class PokerPlayer extends CardPlayer
 {
-    PokerPlayer( String playerName, int gameId )
+    PokerPlayer( String playerName )
     {
-        super( playerName, gameId );
+        super( playerName );
         stake = 1000;
     }
 

@@ -1,6 +1,6 @@
 package com.passkeysoft.poker;
 
-import com.passkeysoft.cardgameserver.CardGameData;
+import com.passkeysoft.cardgameserver.CardGameMetadata;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,7 +59,7 @@ public class PokerResource
     @Produces(MediaType.TEXT_PLAIN)
     public String start( @CookieParam("name") String playerName, @CookieParam("gameId") String gameId )
     {
-        pokerServer.start( CardGameData.parseGameId( gameId ));
+        pokerServer.start( CardGameMetadata.parseGameId( gameId ));
         return "OK";
     }
 
@@ -71,17 +71,17 @@ public class PokerResource
     {
         int playerNum = Integer.parseInt( playerId );
         // get the game that this action is supposed to apply to
-        int gameNum = CardGameData.parseGameId( gameId );
+        int gameNum = CardGameMetadata.parseGameId( gameId );
         // set these value where the play() method can get them
-        CardGameData<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = PokerServer.getGameData( gameNum );
-        synchronized (gameWrapper.theGame)
+        CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = PokerServer.getGameData( gameNum );
+        synchronized (gameWrapper.getTheGame())
         {
             //  For testing, we will use the current player no matter what the browser said
-            playerNum = gameWrapper.theGame.getCurrentPlayer();    // TODO: for development I need to override this.
+            playerNum = gameWrapper.getTheGame().getCurrentPlayer();    // TODO: for development I need to override this.
 
             // notify the play thread to do so. Only used for timer threads
-            gameWrapper.theGame.setCardToBePlayed( null, playerNum, bet );
-            gameWrapper.theGame.notify();
+            gameWrapper.getTheGame().setObjectToBePlayed( null, playerNum, bet );
+            gameWrapper.getTheGame().notify();
 //            gameWrapper.getTheGame().play( null, playerNum, bet );
 //            PokerPlayer player = gameWrapper.getTheGame().finalizePlay();
 //            if (null != player)

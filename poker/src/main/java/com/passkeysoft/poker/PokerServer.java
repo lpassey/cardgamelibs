@@ -2,8 +2,8 @@ package com.passkeysoft.poker;
 
 import poker.Poker;
 import com.passkeysoft.Card;
-import com.passkeysoft.cardgameserver.CardGameData;
-import com.passkeysoft.cardgameserver.CardPlayerData;
+import com.passkeysoft.cardgameserver.CardGameMetadata;
+import com.passkeysoft.cardgameserver.CardPlayer;
 import org.glassfish.jersey.media.sse.OutboundEvent;
 import org.jvnet.hk2.annotations.Service;
 
@@ -14,9 +14,6 @@ import javax.ws.rs.sse.SseEventSink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.passkeysoft.poker.PokerDeck.*;
-import static com.passkeysoft.poker.PokerGame.FOLDED;
 
 @Service
 @Singleton
@@ -32,16 +29,16 @@ class PokerServer
         "faces/Rudy_rooster_crowing.mp3", "faces/horned_owl.mp3", "faces/Hawk-Call.mp3",
         "faces/Metal_Gong.mp3"};
 
-    private static final List<CardGameData<PokerGame<PokerPlayer>, PokerPlayer>> gameList = new ArrayList<>(  );
+    private static final List<CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer>> gameList = new ArrayList<>(  );
 
-    static List<CardGameData<PokerGame<PokerPlayer>, PokerPlayer>> getGameList()
+    static List<CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer>> getGameList()
     {
         return gameList;
     }
 
-    static CardGameData<PokerGame<PokerPlayer>, PokerPlayer> getGameData( int gameNum )
+    static CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> getGameData( int gameNum )
     {
-        CardGameData<PokerGame<PokerPlayer>, PokerPlayer> game;
+        CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> game;
         try
         {
             game = gameList.get( gameNum );
@@ -60,9 +57,9 @@ class PokerServer
 
     public class Monitor implements Runnable
     {
-        private final CardGameData<PokerGame<PokerPlayer>, PokerPlayer> gameMeta;
+        private final CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> gameMeta;
 
-        Monitor( CardGameData<PokerGame<PokerPlayer>, PokerPlayer> game )
+        Monitor( CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> game )
         {
             this.gameMeta = game;
         }
@@ -198,9 +195,9 @@ class PokerServer
                 }
                 if (null != player)
                 {
-                    PokerGame<PokerPlayer> game = gameMeta.theGame;
+                    PokerGame<PokerPlayer> game = gameMeta.getTheGame();
                     announceActivePlayer( game, player.getPlayerName(), game.lastAction );
-                    activatePlayer( player, gameMeta.theGame );
+                    activatePlayer( player, game );
                 }
             }
             catch( InterruptedException ignore )
@@ -217,7 +214,7 @@ class PokerServer
 
     private synchronized void broadcast( List<PokerPlayer> playerList, OutboundEvent event )
     {
-        for (CardPlayerData player : playerList) try
+        for (CardPlayer player : playerList) try
         {
             if (null != player)
             {
@@ -237,8 +234,8 @@ class PokerServer
     synchronized void registerPlayer( SseEventSink eventSink, String playerId, String gameId, int noise )
     {
         int playerNum = Integer.parseInt( playerId );
-        CardGameData<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = getGameData( CardGameData.parseGameId( gameId ));
-        List<PokerPlayer> players = gameWrapper.theGame.playerList;
+        CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = getGameData( CardGameMetadata.parseGameId( gameId ));
+        List<PokerPlayer> players = gameWrapper.getTheGame().playerList;
         PokerPlayer player;
         try
         {
@@ -257,7 +254,7 @@ class PokerServer
             .name( "whoami" )
             .mediaType( MediaType.TEXT_PLAIN_TYPE )
             .data( String.class, String.format( "{\"name\":\"%s\",\n\"playerId\":%d,\n\"noise\":\"%s\"}",
-                player.getPlayerName(), gameWrapper.theGame.playerList.indexOf( player ), noises[noise] ) )
+                player.getPlayerName(), gameWrapper.getTheGame().playerList.indexOf( player ), noises[noise] ) )
             .build();
         player.sendEvent( event );
 
@@ -283,7 +280,7 @@ class PokerServer
             .mediaType( MediaType.TEXT_PLAIN_TYPE )
             .data( String.class, sb.toString() )
             .build();
-        broadcast( gameWrapper.theGame.playerList, event );
+        broadcast( gameWrapper.getTheGame().playerList, event );
     }
 
     // --------- private methods that support start and play methods
@@ -398,17 +395,17 @@ class PokerServer
     void start( int gameId )
     {
         // initialize the deck and restart the game.
-        CardGameData<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = getGameData( gameId );
+        CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> gameWrapper = getGameData( gameId );
         PokerGame<PokerPlayer> theGame = gameWrapper.getTheGame();
 
         if (!gameWrapper.isStarted())
         {
             // Add some players for testing -- Gort, Robby, Wall-E, Hal, Data, Rosie, Marvin, etc
-            PokerPlayer playerData = new PokerPlayer( "R2D2", gameId );
+            PokerPlayer playerData = new PokerPlayer( "R2D2" );
             theGame.playerList.add( playerData );
-            playerData = new PokerPlayer( "Marvin", gameId );
+            playerData = new PokerPlayer( "Marvin" );
             theGame.playerList.add( playerData );
-            playerData = new PokerPlayer( "Wall-E", gameId );
+            playerData = new PokerPlayer( "Wall-E" );
             theGame.playerList.add( playerData );
             //         playerData = new PokerPlayer( "Data", gameId );
             //         game.playerList.add( playerData );
@@ -416,7 +413,7 @@ class PokerServer
             gameWrapper.getTheGame().start();
             gameWrapper.started = true;    // No one else can join now. TODO: Do we want this?
         }
-        gameWrapper.theGame.restart();
+        gameWrapper.getTheGame().restart();
 
         // send every registered player a restart event with the gameId -- current unused
 //        OutboundEvent event = new OutboundEvent.Builder()
@@ -427,17 +424,17 @@ class PokerServer
 //        broadcast( game.playerList, event );    // broadcast() protects against null players.
 
         // Send every player the first three cards of his/her hand
-        populateAllHands( gameWrapper.theGame );
+        populateAllHands( gameWrapper.getTheGame() );
 
         // Then send everyone the remainder of the hands, with the first two cards obscured.
-        sendOpponentsHands( gameWrapper.theGame );
+        sendOpponentsHands( gameWrapper.getTheGame() );
 
         // Tell the first player to activate
-        PokerPlayer player = gameWrapper.theGame.getNextPlayer();
-        announceActivePlayer( gameWrapper.theGame, player.getPlayerName(), "New deal" );
+        PokerPlayer player = gameWrapper.getTheGame().getNextPlayer();
+        announceActivePlayer( gameWrapper.getTheGame(), player.getPlayerName(), "New deal" );
 //        player = gameWrapper.theGame.playerList.get( 1 );    // For testing, use me.
-        gameWrapper.theGame.unPause();
-        activatePlayer( player, gameWrapper.theGame );
+        gameWrapper.getTheGame().unPause();
+        activatePlayer( player, gameWrapper.getTheGame() );
     }
 
     void activatePlayer( PokerPlayer player, PokerGame<PokerPlayer> game )
@@ -448,7 +445,7 @@ class PokerServer
             int bet = Poker7Robot.actLikeARobot( player, game );
             synchronized (game)
             {
-                game.setCardToBePlayed( null, game.playerList.indexOf( player ), bet );
+                game.setObjectToBePlayed( null, game.playerList.indexOf( player ), bet );
                 game.notify();
             }
         }

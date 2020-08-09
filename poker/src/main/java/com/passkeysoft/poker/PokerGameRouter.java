@@ -1,6 +1,6 @@
 package com.passkeysoft.poker;
 
-import com.passkeysoft.cardgameserver.CardGameData;
+import com.passkeysoft.cardgameserver.CardGameMetadata;
 import org.glassfish.jersey.media.sse.OutboundEvent;
 
 import javax.inject.Inject;
@@ -36,10 +36,10 @@ public class PokerGameRouter
      */
     private synchronized void updateGameList()
     {
-        List<CardGameData<PokerGame<PokerPlayer>, PokerPlayer>> gameList = PokerServer.getGameList();
+        List<CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer>> gameList = PokerServer.getGameList();
         if (0 < gameList.size())
         {
-            CardGameData gameData;
+            CardGameMetadata gameData;
             int listSize = gameList.size();
             StringBuilder sb = new StringBuilder( "{\n\"games\":[" );
             boolean first = true;
@@ -91,19 +91,19 @@ public class PokerGameRouter
         @FormParam( "noise" ) String noise )
         throws URISyntaxException
     {
-        final List<CardGameData<PokerGame<PokerPlayer>, PokerPlayer>> gameList = PokerServer.getGameList();
+        final List<CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer>> gameList = PokerServer.getGameList();
 
         // gameId is -1 for a new game, or the number of the game to join otherwise
         synchronized (gameList)     // Anyone else wanting to join this game will have to wait until I'm done.
         {
-            CardGameData<PokerGame<PokerPlayer>, PokerPlayer> game = null;
-            int gameNum = CardGameData.parseGameId( gameId );
+            CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> game = null;
+            int gameNum = CardGameMetadata.parseGameId( gameId );
 
             if (0 > gameNum || gameList.size() <= gameNum)
             {
                 // asking for a new game
                 // run through the game list and see if there is an abandoned game; if so, use it.
-                for (CardGameData<PokerGame<PokerPlayer>, PokerPlayer> gameIter : gameList )
+                for (CardGameMetadata<PokerGame<PokerPlayer>, PokerPlayer> gameIter : gameList )
                 {
                     if (!gameIter.isStarted() && 30000 < (System.currentTimeMillis() - gameIter.whenCreated()))
                     {
@@ -115,7 +115,7 @@ public class PokerGameRouter
                 }
                 if (null == game)
                 {
-                    game = new CardGameData<>( playerName );
+                    game = new CardGameMetadata<>( playerName );
                     PokerServer.Monitor monitor = new PokerServer().new Monitor( game );
                     game.theGame = new PokerGame<>( 60000, monitor );
                     gameList.add( game );
@@ -132,11 +132,11 @@ public class PokerGameRouter
                Add the player to the game list, and set cookies for the player. We will then redirect to the game
                 page, and all further server requests will go to {@Link PokerResource }.java
             */
-            PokerPlayer playerData = new PokerPlayer( playerName, gameNum );
-            game.theGame.playerList.add( playerData );
+            PokerPlayer playerData = new PokerPlayer( playerName );
+            game.getTheGame().playerList.add( playerData );
 
             NewCookie identity = new NewCookie( "playerId",
-                String.valueOf( game.theGame.playerList.indexOf( playerData )));
+                String.valueOf( game.getTheGame().playerList.indexOf( playerData )));
             NewCookie gameCookie = new NewCookie( "gameId", String.valueOf( gameNum ));
             NewCookie noiseCookie = new NewCookie( "noise", noise );
             return Response

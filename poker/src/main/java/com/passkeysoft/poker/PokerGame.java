@@ -1,6 +1,7 @@
 package com.passkeysoft.poker;
 
 import com.passkeysoft.Card;
+import com.passkeysoft.Deck;
 import com.passkeysoft.cardgameserver.CardGame;
 import poker.Poker;
 
@@ -108,9 +109,7 @@ public class PokerGame<T extends PokerPlayer> extends CardGame<T>
                 // this player folded, but his existing bet is still good
                 player.withdraw();
                 // discard his hand
-                List<Card> hand = deck.getHandByOwner( playerNum );
-                for (Card card : hand )
-                    deck.discard( card, 0 );
+                deck.returnHandFromOwner( playerNum, Deck.DISCARD );
                 lastAction = String.format("%s folded", player.getPlayerName());
             }
             // By setting the bet before calling getNextPlayer it won't return null if the bets aren't equal

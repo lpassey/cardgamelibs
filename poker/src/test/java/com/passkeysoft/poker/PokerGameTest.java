@@ -1,10 +1,6 @@
 package com.passkeysoft.poker;
 
 import com.passkeysoft.Card;
-import com.passkeysoft.cardgameserver.CardGameData;
-import com.passkeysoft.cardgameserver.CardPlayerData;
-import com.passkeysoft.poker.PokerDeck;
-import com.passkeysoft.poker.PokerGame;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -14,7 +10,6 @@ import poker.Poker;
 import java.util.*;
 
 import static poker.Poker.*;
-import static poker.Tables.PRIMES;
 import static com.passkeysoft.poker.PokerDeck.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -181,10 +176,10 @@ public class PokerGameTest
         // Sort by suit then value; should have the effect of sorting all derived hands as well
         // ordinarily this wouldn't be done, but we're doing here for testing purposed
         hand.sort( Comparator.comparing( Card::getValue ).reversed().thenComparing( Card::getSuit ) );
-        String myHand = deck.buildHandAsJSON( "", hand );
+        String myHand = deck.buildHandAsJSON( hand, "" );
         List<Card> bestHand = Poker.getBest5CardsOf7( hand );
         int value = Poker.evaluate( bestHand );
-        myHand = deck.buildHandAsJSON( "", bestHand );
+        myHand = deck.buildHandAsJSON( bestHand, "" );
     }
 
     @Test
@@ -260,7 +255,7 @@ public class PokerGameTest
         StringBuilder sb = new StringBuilder( "{\"hands\" : [" );
         for (int i = 0; i < 5; i++)
         {
-            String myHand = deck.buildHandAsJSON( "", hands.get(i) );
+            String myHand = deck.buildHandAsJSON( hands.get(i), "" );
             sb.append( myHand );
             if (i < 4)
                 sb.append( "," );
@@ -286,7 +281,7 @@ public class PokerGameTest
         {
             List<Card> hand = sortedHands.get(i);
             hand.sort( Comparator.comparing( Card::getValue ).reversed());
-            String myHand = deck.buildHandAsJSON( "", hand );
+            String myHand = deck.buildHandAsJSON( hand, "" );
             sb.append( myHand );
             if (i < 4)
                 sb.append( "," );
@@ -302,7 +297,7 @@ public class PokerGameTest
         {
             List<Card> hand = handsOf5.get( i );
             hand.sort( Comparator.comparing( Card::getValue ).reversed());
-            String myHand = deck.buildHandAsJSON( "", handsOf5.get( i ));
+            String myHand = deck.buildHandAsJSON( handsOf5.get( i ), "" );
             String type = pokerTypes[ Poker.typeOfHand( hand )];
             sb.append( "{\n\"type\" : \"" ).append( type ).append( "\"," );
             sb.append( myHand.substring( 1 ) );
@@ -321,11 +316,11 @@ public class PokerGameTest
         // the constructor automatically adds player 0, so no need to do it again
         PokerGame<PokerPlayer> theGame = new PokerGame<>(600000, null );
 
-        theGame.playerList.add( new PokerPlayer( "One", 0 ));
-        theGame.playerList.add( new PokerPlayer( "Two", 0 ));
-        theGame.playerList.add( new PokerPlayer( "Three", 0 ));
-        theGame.playerList.add( new PokerPlayer( "Four", 0 ));
-        theGame.playerList.add( new PokerPlayer( "Five", 0 ));
+        theGame.playerList.add( new PokerPlayer( "One" ));
+        theGame.playerList.add( new PokerPlayer( "Two" ));
+        theGame.playerList.add( new PokerPlayer( "Three" ));
+        theGame.playerList.add( new PokerPlayer( "Four" ));
+        theGame.playerList.add( new PokerPlayer( "Five" ));
         theGame.shuffle();
         theGame.restart( 0, false );
 
