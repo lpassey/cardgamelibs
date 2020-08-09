@@ -10,7 +10,7 @@ import static com.passkeysoft.Deck.DISCARD;
 
 /**
  * An abstract class providing basic functionality for a card game.
- * @param <T>   The type of player that will participate in this game.
+ * @param <T>   extends {@link CardPlayer}. The type of player that will participate in this game.
  */
 public abstract class CardGame<T extends CardPlayer> implements Runnable
 {
@@ -196,7 +196,9 @@ public abstract class CardGame<T extends CardPlayer> implements Runnable
      * @param target    the index of the player who is the target of the play. If the value is
      *                  65535 then the card is being discarded. If the value is zero then
      *                  the target is (typically) ignored.
+     * @throws IllegalGamePlayException} thrown when game play cannot be completed for non-Java reasons.
      */
+
     abstract public void play( Object objectPlayed, int player, int target )
         throws IllegalGamePlayException;
 
