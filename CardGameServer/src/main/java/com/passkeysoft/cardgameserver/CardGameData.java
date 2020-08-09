@@ -1,6 +1,6 @@
 package com.passkeysoft.cardgameserver;
 
-public class CardGameData<T extends CardGame<S>, S extends CardPlayerData>
+public class CardGameData<T extends CardGame<S>, S extends CardPlayer>
 {
     public T theGame;
 
