@@ -7,17 +7,42 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+/**
+ * The type Deck.
+ */
+@SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 public class Deck
 {
+    /**
+     * The constant DISCARD.
+     */
     public static final int DISCARD = 65535;
 
+    /**
+     * The Card list.
+     */
     protected List<Card> cardList = new ArrayList<>(  );
 
+    /**
+     * The type Face.
+     */
     public static class Face
     {
+        /**
+         * The Image.
+         */
         public String image;
+        /**
+         * The Description.
+         */
         public String description;
 
+        /**
+         * Instantiates a new Face.
+         *
+         * @param image       the image
+         * @param description the description
+         */
         public Face( String image, String description )
         {
             this.image = image;
@@ -34,12 +59,26 @@ public class Deck
     private TreeMap<Integer, TreeMap<Integer, Face>> deckFaces = new TreeMap<>(  );
     private SecureRandom random = new SecureRandom();
 
-    protected Deck addCard( Card card )
+    /**
+     * Add card deck.
+     *
+     * @param suit  the suit
+     * @param value the value
+     * @return the deck
+     */
+    protected Deck addCard( int suit, int value )
     {
-        cardList.add( card );
+        cardList.add( new Card( suit, value ));
         return this;
     }
 
+    /**
+     * Add face deck.
+     *
+     * @param card the card
+     * @param face the face
+     * @return the deck
+     */
     protected Deck addFace( Card card, Face face )
     {
         TreeMap<Integer, Face> cardFaces = deckFaces.computeIfAbsent(
@@ -48,6 +87,12 @@ public class Deck
         return this;
     }
 
+    /**
+     * Gets face.
+     *
+     * @param card the card
+     * @return the face
+     */
     public Face getFace( Card card )
     {
         TreeMap<Integer, Face> cardFaces = deckFaces.get( card.getSuit() );
@@ -66,6 +111,9 @@ public class Deck
         }
     }
 
+    /**
+     * Shuffle.
+     */
     public void shuffle()
     {
         // Now sort the list by 1) owner and 2) random number. This will have the effect of
@@ -73,6 +121,11 @@ public class Deck
         shuffleCustom( Comparator.comparing( Card::getOwner ));
     }
 
+    /**
+     * Shuffle custom.
+     *
+     * @param comparator the comparator
+     */
     public void shuffleCustom( Comparator<Card> comparator )
     {
         randomize();    // create a new random number for every card in the deck
@@ -93,6 +146,12 @@ public class Deck
     }
 
 
+    /**
+     * Deal card to card.
+     *
+     * @param owner the owner
+     * @return the card
+     */
     public Card dealCardTo( int owner )
     {
         for (Card toBeDealt : cardList)
@@ -106,6 +165,13 @@ public class Deck
         return null;    // No undealt cards remaining
     }
 
+    /**
+     * Deal card to player by suit card.
+     *
+     * @param owner the owner
+     * @param suit  the suit
+     * @return the card
+     */
     public Card dealCardToPlayerBySuit( int owner, int suit )
     {
         for (Card toBeDealt : cardList)
@@ -120,16 +186,30 @@ public class Deck
 
     }
 
+    /**
+     * Discard card.
+     *
+     * @param card     the card
+     * @param position the position
+     * @return the card
+     */
     public Card discard( Card card, long position )
     {
         card.setOwner( DISCARD ).setRandom( position );
         return card;
     }
 
+    /**
+     * Deal new hand to player list.
+     *
+     * @param owner          the owner
+     * @param numCardsInHand the num cards in hand
+     * @return the list
+     */
     public List<Card> dealNewHandToPlayer( int owner, int numCardsInHand )
     {
         // return all this players cards to the deck
-        returnHandFromOwner( owner );
+        returnHandFromOwner( owner, 0 );
         for (int i = 0; i < numCardsInHand ; i++)
         {
             dealCardTo( owner );
@@ -137,6 +217,12 @@ public class Deck
         return getHandByOwner( owner );
     }
 
+    /**
+     * Gets hand by owner.
+     *
+     * @param owner the owner
+     * @return the hand by owner
+     */
     public List<Card> getHandByOwner( int owner )
     {
         return cardList.stream()
@@ -144,15 +230,28 @@ public class Deck
             .collect( Collectors.toList());
     }
 
-    public void returnHandFromOwner( int owner )
+    /**
+     * Return hand from owner.
+     *
+     * @param oldOwner the old owner
+     * @param newOwner the new owner
+     */
+    public void returnHandFromOwner( int oldOwner, int newOwner )
     {
         for (Card card : cardList )
         {
-            if (card.getOwner() == owner)
-                card.setOwner( 0 );
+            if (card.getOwner() == oldOwner)
+                card.setOwner( newOwner );
         }
     }
 
+    /**
+     * Build card as json string.
+     *
+     * @param path the path
+     * @param card the card
+     * @return the string
+     */
     public String buildCardAsJSON( String path, Card card )
     {
         Face face = getFace( card );
@@ -177,6 +276,13 @@ public class Deck
         return sb.toString();
     }
 
+    /**
+     * Build hand as json string.
+     *
+     * @param path the path
+     * @param hand the hand
+     * @return the string
+     */
     public String buildHandAsJSON( String path, List<Card> hand )
     {
         StringBuilder sb = new StringBuilder("{\n\"cards\":[\n");
@@ -195,9 +301,9 @@ public class Deck
     /**
      * Gets the card from a player's hand that matches the card presented.
      *
-     * @param cardToMatch   // The card we are trying to match
-     * @param playerNum     // The player whose hand we are searching
-     * @return              // The (a) matching card from the player's hand, or null if a match cannot be found.
+     * @param cardToMatch // The card we are trying to match
+     * @param playerNum   // The player whose hand we are searching
+     * @return // The (a) matching card from the player's hand, or null if a match cannot be found.
      */
     public Card getMatchingCard( Card cardToMatch, int playerNum )
     {

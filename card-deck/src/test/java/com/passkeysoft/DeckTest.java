@@ -36,7 +36,7 @@ public class DeckTest
                 sb.append( ".png" );
 
                 testDeck.addFace( newCard, new Deck.Face( sb.toString(), sb.toString() ));
-                testDeck.addCard( newCard );
+                testDeck.cardList.add( newCard );
             }
         }
 
