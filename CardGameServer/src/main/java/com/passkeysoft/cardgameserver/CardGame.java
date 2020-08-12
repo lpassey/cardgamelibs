@@ -177,7 +177,7 @@ public abstract class CardGame<T extends CardPlayer> implements Runnable
         pause();    // The game won't respond until unpaused!
         if (withDiscard)
         {
-            deck.dealCardTo( DISCARD ).setRandom( 0L );
+            deck.burnCard();
         }
         currentPlayer = firstPlayer;
         return firstPlayer;
@@ -318,8 +318,8 @@ public abstract class CardGame<T extends CardPlayer> implements Runnable
         synchronized (this)
         {
             notify();   // This should reset the timer as wait will expire.
-            Thread.yield(); // give it a chance.
         }
+        Thread.yield(); // give it a chance.
     }
 
     /*-----------------------------

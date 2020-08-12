@@ -4,11 +4,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class CardGameTest
 {
-    CardGame<CardPlayerData> theGame;
+    CardGame<CardPlayer> theGame;
     Runnable monitor = new Runnable()
     {
         @Override

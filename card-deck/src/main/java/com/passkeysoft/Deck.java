@@ -219,6 +219,24 @@ public class Deck
     }
 
     /**
+     * Discards the first available card on the deck.
+     *
+     * @return the ={@link Card} burned, or null if there are not any undealt cards.
+     */
+    public Card burnCard()
+    {
+        for (Card card : cardList)
+        {
+            if (0 == card.getOwner())
+            {
+                discard( card );
+                return card;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Gets hand by owner.
      *
      * @param owner the owner

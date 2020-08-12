@@ -44,7 +44,7 @@ public class DeckTest
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
     }
 
@@ -115,9 +115,9 @@ public class DeckTest
         assertEquals( 0, hand.size());
 
         // discard 3 cards
-        testDeck.discard( player1Hand.get( 0 ), 0 );
-        testDeck.discard( player1Hand.get( 1 ), 1 );
-        testDeck.discard( player1Hand.get( 2 ), 2 );
+        testDeck.discard( player1Hand.get( 0 ) );
+        testDeck.discard( player1Hand.get( 1 ) );
+        testDeck.discard( player1Hand.get( 2 ) );
 
         hand = testDeck.getHandByOwner( Deck.DISCARD );
         assertEquals( 3, hand.size());
@@ -153,7 +153,7 @@ public class DeckTest
     {
         // build ace of spades
         Card card = new Card(3,12);
-        String jsonCard = testDeck.buildCardAsJSON( "path/", card );
+        String jsonCard = testDeck.buildCardAsJSON( card,"path/" );
         final ObjectMapper mapper = new ObjectMapper();
         mapper.readTree( jsonCard );
 
@@ -176,7 +176,7 @@ public class DeckTest
         hand.add( new Card( 2, 10 ));
         hand.add( new Card( 2, 0 ));
         hand.sort( Comparator.comparing( Card::getValue ).reversed().thenComparing( Card::getSuit ));
-        String jsonCard = testDeck.buildHandAsJSON( "path/", hand );
+        String jsonCard = testDeck.buildHandAsJSON( hand, "path/" );
         final ObjectMapper mapper = new ObjectMapper();
         mapper.readTree( jsonCard );
 
