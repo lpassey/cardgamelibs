@@ -1,5 +1,7 @@
 package com.passkeysoft.poker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.passkeysoft.Card;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -183,7 +185,7 @@ public class PokerGameTest
     }
 
     @Test
-    public void test7Stud()
+    public void test7Stud() throws JsonProcessingException
     {
         PokerGame<PokerPlayer> game = new PokerGame<>(600000, null );
         List<List<Card>> hands = new ArrayList<>( 5 );
@@ -262,7 +264,10 @@ public class PokerGameTest
             sb.append( "\n" );
         }
         sb.append( "]}" );
-        System.out.println(sb.toString());
+
+        // throw an exception if not valid JSON
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.readTree( sb.toString() );
 
         List<List<Card>> sortedHands = new ArrayList<>( hands );
         // TODO: Sort the old array to match the new array
@@ -288,7 +293,11 @@ public class PokerGameTest
             sb.append( "\n" );
         }
         sb.append( "]}" );
-        System.out.println(sb.toString());
+//        System.out.println(sb.toString());
+
+        // throw an exception if not valid JSON
+        mapper = new ObjectMapper();
+        mapper.readTree( sb.toString() );
 
         int winner = hands.indexOf( sortedHands.get( 0 ) );
 
@@ -306,9 +315,10 @@ public class PokerGameTest
             sb.append( "\n" );
         }
         sb.append( "]}" );
-        System.out.println(sb.toString());
+        // throw an exception if not valid JSON
+        mapper = new ObjectMapper();
+        mapper.readTree( sb.toString() );
     }
-
 
     @Test
     public void getNextPlayer()

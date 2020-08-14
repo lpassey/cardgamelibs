@@ -21,6 +21,9 @@ public class DeckTest
     private List<Card> player1Hand;
 
     @Before
+    /*
+     * Builds a standard 52 card poker deck. Then deals 7 cards to player index one.
+     */
     public void setUp()
     {
         for (int suit = 0; suit < 4; suit++)
@@ -114,18 +117,29 @@ public class DeckTest
         List<Card> hand = testDeck.getHandByOwner( Deck.DISCARD );
         assertEquals( 0, hand.size());
 
-        // discard 3 cards
-        testDeck.discard( player1Hand.get( 0 ) );
-        testDeck.discard( player1Hand.get( 1 ) );
-        testDeck.discard( player1Hand.get( 2 ) );
+        Card firstDiscarded = player1Hand.get( 0 );
+        Card lastDiscarded = player1Hand.get( 2 );
+
+        // discard 3 cards from the player's hand
+        testDeck.discard( firstDiscarded )
+            .discard( player1Hand.get( 1 ) )
+            .discard( lastDiscarded );
 
         hand = testDeck.getHandByOwner( Deck.DISCARD );
         assertEquals( 3, hand.size());
 
+        // because order has not changed, the first card in the discard pile should be the first card discarded
+        assertEquals( firstDiscarded, hand.get( 0 ) );
+
+        // Sort by "getRandom", and the first shall be last and the last shall be first.
+        hand.sort( Comparator.comparing( Card::getRandom ).reversed());
+        assertEquals( lastDiscarded, hand.get( 0 ) );
+        assertEquals( firstDiscarded, hand.get( 2 ) );
+
         player1Hand = testDeck.getHandByOwner( 1 );
         assertEquals( 4, player1Hand.size() );
 
-        // Three discarded, still 45 in the deck;
+        // Three discarded, 4 left in the player's hand, still 45 in the deck;
         hand = testDeck.getHandByOwner( 0 );
         assertEquals( 45, hand.size());
     }

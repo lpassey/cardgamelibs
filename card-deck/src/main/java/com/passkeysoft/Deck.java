@@ -60,7 +60,6 @@ public class Deck
 
     private TreeMap<Integer, TreeMap<Integer, Face>> deckFaces = new TreeMap<>(  );
     private SecureRandom random = new SecureRandom();
-    private long discardPosition = 0;
 
     /**
      * Add a newly instantiated {@link Card} to this deck.
@@ -150,7 +149,6 @@ public class Deck
      */
     public void reset()
     {
-        discardPosition = 0;   // start a new discard index, if needed
         for (Card card : cardList)
         {
             card.setOwner( 0 );
@@ -201,21 +199,24 @@ public class Deck
 
     /**
      * Discard a card. Simply sets the owner of the card to {@link Deck#DISCARD} and sets
-     * the random value according to it's new discardPosition. Because {@link Deck#discardPosition} is incremented
-     * on every discard, the most recently discarded card can be retrieved by getting all
-     * the cards owned by {@link Deck#DISCARD}, sorting the list in reverse by {@link Card#getRandom()},
+     * the random value to the current time in milliseconds. Because the random value is reset
+     * on every discard, the most recently discarded card can be retrieved by getting all the
+     * cards owned by {@link Deck#DISCARD}, sorting the list in reverse by {@link Card#getRandom()},
      * and taking the first card in the list.
-     * <p>
-     * If a card's owner changes from {@link Deck#DISCARD} to a player number there will be gaps
-     * in the sorted discard list, but these gaps should be inconsequential.
      *
      * @param card the card being discarded.
-     * @return the card that was discarded, suitable for fluent-style programming.
+     * @return the Deck object, suitable for fluent-style programming.
      */
-    public Card discard( Card card )
+    public Deck discard( Card card )
     {
-        card.setOwner( DISCARD ).setRandom( discardPosition++ );
-        return card;
+        card.setOwner( DISCARD ).setRandom( System.currentTimeMillis() );
+        try
+        {
+            // Don't discard cards too fast.
+            Thread.sleep(1);
+        }
+        catch( InterruptedException ignore ) {}
+        return this;
     }
 
     /**
@@ -234,6 +235,16 @@ public class Deck
             }
         }
         return null;
+    }
+
+    /**
+     * @return a {@link List} of all "discarded" cards in the deck, sorted in reverse chronological order
+     */
+    public List<Card> getDiscards()
+    {
+        List<Card> hand = getHandByOwner( DISCARD );
+        hand.sort( Comparator.comparing( Card::getRandom ).reversed() );
+        return hand;
     }
 
     /**
